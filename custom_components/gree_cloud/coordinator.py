@@ -102,12 +102,15 @@ class HWHPAwareCloudDevice(CloudDevice):
 def is_hwhp_device(coordinator: "CloudDeviceDataUpdateCoordinator") -> bool:
     """Return True if the device appears to be a Hot Water Heat Pump.
 
-    Detection is based on whether the device responded with the ``WatTem``
-    (water temperature) property after the initial state fetch.
+    Detection is based on the device reporting a usable ``WatTmp`` (water
+    temperature) after the initial state fetch. Presence of the key alone is
+    not sufficient: devices answer with 0 for properties they do not
+    implement, and the key is requested from every device.
     """
-    return (
-        coordinator.device.raw_properties.get(HWHP_PROP_WATER_TEMP) is not None
-    )
+    # Devices return a filler 0 for properties they do not implement, so the
+    # mere presence of WatTmp is not evidence of a water heater -- it is
+    # present on every device that gets asked for it. Require a real reading.
+    return coordinator.device.raw_properties.get(HWHP_PROP_WATER_TEMP) not in (None, 0)
 
 
 def _is_mqtt_disconnected(error: Exception) -> bool:
